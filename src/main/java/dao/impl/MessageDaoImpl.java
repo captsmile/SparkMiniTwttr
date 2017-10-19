@@ -34,6 +34,7 @@ public class MessageDaoImpl implements MessageDao {
         String sql =  "select message.*, user.* from message, user where " +
                 "user.user_id = message.author_id and user.user_id = :id " +
                 "order by message.pub_date desc";
+        //TODO interesting realization lambda messageMapper
         List<Message> query = template.query(sql, params, messageMapper);
 
         return query;
@@ -41,17 +42,41 @@ public class MessageDaoImpl implements MessageDao {
 
     @Override
     public List<Message> getUserFullTimelineMessages(User user) {
-        return null;
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("id", user.getId());
+        //TODO how to work this named parameter in SQL ?
+        String sql = "select message.*, user.* from message, user " +
+                "where message.author_id = user.user_id and ( " +
+                "user.user_id = :id or " +
+                "user.user_id in (select followee_id from follower " +
+                "where follower_id = :id))" +
+                "order by message.pub_date desc";
+        List<Message> result = template.query(sql, params, messageMapper);
+
+        return result;
     }
 
     @Override
     public List<Message> getPublicTimelineMessages() {
-        return null;
+        Map<String, Object> params = new HashMap<String, Object>();
+
+        String sql = "select message.*, user.* from message, user " +
+                "where message.author_id = user.user_id " +
+                "order by message.pub_date desc";
+        List<Message> result = template.query(sql, params, messageMapper);
+
+        return result;
     }
 
     @Override
     public void insertMessage(Message m) {
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("userId", m.getUserId());
+        params.put("text", m.getText());
+        params.put("pubDate", m.getPubDate());
 
+        String sql = "insert into message (author_id, text, pub_date) values (:userId, :text, :pubDate)";
+        template.update(sql, params);
     }
 
     private RowMapper<Message> messageMapper = (rs, rowNum) -> {

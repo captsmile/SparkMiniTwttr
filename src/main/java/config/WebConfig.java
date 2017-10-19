@@ -253,6 +253,7 @@ public class WebConfig {
 		/*
 		 * Checks if the user is already authenticated
 		 */
+        //TODO interesting realization lambda Rout
         before("/register", (req, res) -> {
             User authUser = getAuthenticatedUser(req);
             if(authUser != null) {
